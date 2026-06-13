@@ -31,10 +31,10 @@ export default function Analytics() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Total Visitors Today</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Total Customers Today</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{summary?.total_customers_today || 0}</div>
+                <div className="text-3xl font-bold">{(summary?.active_tokens || 0) + (summary?.completed_today || 0) + (summary?.waiting_count || 0)}</div>
               </CardContent>
             </Card>
             <Card>
@@ -42,15 +42,15 @@ export default function Analytics() {
                 <CardTitle className="text-sm font-medium text-muted-foreground">Average Wait Time</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{summary?.average_wait_time_minutes || 0}m</div>
+                <div className="text-3xl font-bold">{summary?.overall?.avg_wait_minutes?.toFixed(1) || 0}m</div>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Peak Drop-off Rate</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Drop-off Rate</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="text-3xl font-bold">{summary?.drop_off_rate_percent || 0}%</div>
+                <div className="text-3xl font-bold">{summary?.drop_off_rate?.toFixed(1) || 0}%</div>
                 <p className="text-xs text-muted-foreground mt-1">Abandoned queue rate</p>
               </CardContent>
             </Card>
@@ -82,7 +82,7 @@ export default function Analytics() {
             </Card>
           )}
 
-          {summary?.wait_times_by_service && (
+          {summary?.by_service_type && (
              <Card>
               <CardHeader>
                 <CardTitle>Wait Time by Service (Today)</CardTitle>
@@ -90,10 +90,10 @@ export default function Analytics() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {summary.wait_times_by_service.map((item: any, i: number) => (
+                  {Object.entries(summary.by_service_type).map(([name, metrics]: [string, any], i: number) => (
                      <div key={i} className="flex justify-between items-center">
-                        <span className="font-bold">{item.service_type_name}</span>
-                        <span>{item.average_wait}m</span>
+                        <span className="font-bold">{name}</span>
+                        <span>{metrics.avg_wait_minutes?.toFixed(1) || 0}m</span>
                      </div>
                   ))}
                 </div>

@@ -117,6 +117,21 @@ async def list_operators(
     result = await db.execute(select(Operator).where(Operator.organization_id == org.id))
     return result.scalars().all()
 
+@router.delete("/operators/{operator_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_operator(
+    operator_id: int,
+    org: Organization = Depends(get_current_organization),
+    db: AsyncSession = Depends(get_db)
+):
+    """Delete an operator permanently."""
+    operator = await db.get(Operator, operator_id)
+    if not operator or operator.organization_id != org.id:
+        raise HTTPException(status_code=404, detail="Operator not found.")
+        
+    await db.delete(operator)
+    await db.commit()
+    return None
+
 @router.get("/counters", response_model=list[AdminCounterStatusResponse])
 async def list_counters_status(
     org: Organization = Depends(get_current_organization),

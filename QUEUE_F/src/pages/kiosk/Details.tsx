@@ -14,7 +14,21 @@ export default function Details() {
   const [phone, setPhone] = useState("");
 
   const joinMutation = useMutation({
-    mutationFn: () => joinQueue(qr_slug as string, { customer_name: name, customer_phone: phone, service_type_id: serviceTypeId }),
+    mutationFn: () => {
+      // Backend E.164 requires a number starting with [1-9]. If left blank, pass a generic dummy value to satisfy API.
+      let finalPhone = phone.replace(/[\s-]/g, '');
+      if (!finalPhone) {
+        finalPhone = "+10000000000";
+      } else if (!finalPhone.startsWith('+')) {
+        finalPhone = `+${finalPhone}`;
+      }
+
+      return joinQueue(qr_slug as string, { 
+        customer_name: name, 
+        customer_phone: finalPhone, 
+        service_type_id: serviceTypeId 
+      });
+    },
     onSuccess: (data) => {
       navigate(`/kiosk/${qr_slug}/success`, { state: { token_number: data.token_number } });
     }

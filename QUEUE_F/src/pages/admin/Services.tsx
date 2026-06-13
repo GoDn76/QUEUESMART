@@ -1,32 +1,84 @@
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchServices } from "@/api/admin";
-
-const fallbackServices = [
-  { id: 1, name: 'Registration', estimated_duration_minutes: 5, priority_weight: 10 },
-  { id: 2, name: 'Billing', estimated_duration_minutes: 8, priority_weight: 10 },
-  { id: 3, name: 'Pharmacy', estimated_duration_minutes: 3, priority_weight: 10 },
-  { id: 4, name: 'Emergency', estimated_duration_minutes: 15, priority_weight: 90 },
-];
+import { useState } from "react";
+import { Plus, Loader2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchServices, createService } from "@/api/admin";
+import { useForm } from "react-hook-form";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 export default function Services() {
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const queryClient = useQueryClient();
+
   const { data, isLoading } = useQuery({
     queryKey: ['adminServices'],
     queryFn: fetchServices,
     retry: false,
   });
 
-  const services = data || fallbackServices;
-  return (
+  const createMutation = useMutation({
+    mutationFn: createService,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminServices'] });
+      setIsAddOpen(false);
+      reset();
+    }
+  });
+
+  const { register, handleSubmit, reset } = useForm<{ name: string; estimated_duration_minutes: number; priority_weight: number }>();
+
+  const onSubmit = (formData: any) => {
+    // Convert string inputs to numbers
+    createMutation.mutate({
+      name: formData.name,
+      estimated_duration_minutes: Number(formData.estimated_duration_minutes),
+      priority_weight: Number(formData.priority_weight)
+    });
+  };
+  const services = data || [];  return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h3 className="text-3xl font-semibold tracking-tight">Services</h3>
           <p className="text-muted-foreground text-sm mt-1">Configure service types offered at your location.</p>
         </div>
-        <Button><Plus className="w-4 h-4 mr-2" /> Add Service</Button>
+        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus className="w-4 h-4 mr-2" /> Add Service</Button>
+          </DialogTrigger>
+          <DialogContent className="bg-[#111113] border border-white/5 text-white sm:max-w-[425px]">
+            <form onSubmit={handleSubmit(onSubmit)}>
+              <DialogHeader>
+                <DialogTitle>Add New Service</DialogTitle>
+                <DialogDescription>
+                  Define a new service type with SLA and priority weight.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#A1A1AA]">Service Name</label>
+                  <input {...register("name", { required: true })} className="w-full bg-[#1A1A1A] border border-[#27272A] rounded-md px-3 py-2 text-white focus:outline-none focus:border-[#4ADE80]" placeholder="General Checkup" required />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#A1A1AA]">Est. Duration (minutes)</label>
+                  <input {...register("estimated_duration_minutes", { required: true, min: 1 })} type="number" className="w-full bg-[#1A1A1A] border border-[#27272A] rounded-md px-3 py-2 text-white focus:outline-none focus:border-[#4ADE80]" placeholder="15" required />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#A1A1AA]">Priority Weight</label>
+                  <input {...register("priority_weight", { required: true, min: 1, max: 200 })} type="number" className="w-full bg-[#1A1A1A] border border-[#27272A] rounded-md px-3 py-2 text-white focus:outline-none focus:border-[#4ADE80]" placeholder="10 (Normal), 100 (High)" required />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Create Service
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">

@@ -32,3 +32,18 @@ export const fetchDisplayState = async (displayId: string, token?: string) => {
   const { data } = await apiClient.get(`/display/${displayId}/state`, { headers });
   return data;
 };
+
+export const createDisplay = async (payload: { name: string; board_type: "COUNTER" | "ORGANIZATION"; counter_id?: number }) => {
+  const { data } = await apiClient.post('/display/create', payload);
+  return data;
+};
+
+export const fetchDisplays = async () => {
+  const { data } = await apiClient.get('/display/');
+  return data;
+};
+
+export const deleteDisplay = async (displayId: string) => {
+  const { data } = await apiClient.delete(`/display/${displayId}`);
+  return data;
+};

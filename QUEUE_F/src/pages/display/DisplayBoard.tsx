@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { fetchDisplayState } from "@/api/display";
-import { Volume2, MonitorPlay, Loader2 } from "lucide-react";
+import { Volume2, MonitorPlay, Loader2, Wifi, WifiOff } from "lucide-react";
+import { useQueueSocket } from "@/hooks/useQueueSocket";
 
 import { useAuthStore } from "@/store/authStore";
 
 export default function DisplayBoard() {
   const { displayId } = useParams();
   const [searchParams] = useSearchParams();
-  const queryClient = useQueryClient();
   const authStoreToken = useAuthStore(state => state.token);
   
   // Hydration state to prevent firing query before localStorage is read
@@ -31,23 +31,19 @@ export default function DisplayBoard() {
     retry: false,
   });
 
-  // Sound and cache invalidation on WebSocket push
+  const roomType = board?.board_type === 'ORGANIZATION' ? 'organization' : 'counter';
+  const roomId = board?.board_type === 'ORGANIZATION' ? String(board.organization_id) : String(board.counter_id);
+
+  const { isConnected, socket } = useQueueSocket(roomType, board ? roomId : null);
+
+  // Sound playing on WebSocket push (invalidation is handled by useQueueSocket)
   useEffect(() => {
-    if (!board) return;
+    if (!socket) return;
     
-    // Connect to organization level WS if organization board, else counter WS
-    const topic = board.board_type === 'ORGANIZATION' 
-        ? `org/${board.organization_id}` 
-        : `counter/${board.counter_id}`;
-        
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/${topic}`;
-    
-    const ws = new WebSocket(wsUrl);
-    ws.onmessage = (event) => {
+    const handleMessage = (event: MessageEvent) => {
       try {
         const data = JSON.parse(event.data);
-        if (data.event === "TOKEN_CALLED") {
+        if (data.event_type === "TOKEN_CALLED") {
           // Play a simple beep natively if possible, or attempt audio play
           try {
             const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -64,12 +60,11 @@ export default function DisplayBoard() {
           } catch(e) {}
         }
       } catch(e) {}
-      
-      queryClient.invalidateQueries({ queryKey: ['displayState'] });
     };
 
-    return () => ws.close();
-  }, [board?.board_type, board?.organization_id, board?.counter_id, queryClient]);
+    socket.addEventListener('message', handleMessage);
+    return () => socket.removeEventListener('message', handleMessage);
+  }, [socket]);
 
   if (!hasHydrated || isLoading) {
     return <div className="h-full flex items-center justify-center text-[#4ADE80]"><Loader2 className="w-16 h-16 animate-spin" /></div>;
@@ -100,9 +95,15 @@ export default function DisplayBoard() {
               <p className="text-[#A1A1AA] uppercase tracking-widest text-sm mt-1">{board.organization_name}</p>
             </div>
          </div>
-         <div className="text-right">
-            <p className="text-4xl font-black text-white">{board.overall_waiting_count || 0}</p>
-            <p className="text-[#A1A1AA] uppercase tracking-widest text-xs mt-1">Total Waiting</p>
+         <div className="flex items-center gap-6 text-right">
+            {isConnected ? 
+              <Wifi className="w-8 h-8 text-[#4ADE80]" /> : 
+              <WifiOff className="w-8 h-8 text-red-500 animate-pulse" />
+            }
+            <div>
+              <p className="text-4xl font-black text-white">{board.overall_waiting_count || 0}</p>
+              <p className="text-[#A1A1AA] uppercase tracking-widest text-xs mt-1">Total Waiting</p>
+            </div>
          </div>
       </header>
 

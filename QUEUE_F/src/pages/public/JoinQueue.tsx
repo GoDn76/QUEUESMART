@@ -68,8 +68,8 @@ export default function JoinQueue() {
         <h3 className="text-lg font-bold text-[#064E3B] mb-4">Join the Queue</h3>
         <form onSubmit={handleSubmit((d) => joinMutation.mutate({
           customer_name: d.name,
-          customer_phone: d.phone,
-          service_type_id: parseInt(d.service_type) || 1
+          customer_phone: d.phone.replace(/[\s-]/g, ''),
+          service_type_id: parseInt(d.service_type) || counter.service_types?.[0]?.id || 1
         }))} className="space-y-4">
           <div className="space-y-1">
             <label className="text-xs font-bold text-[#64748B] uppercase tracking-wider">Full Name</label>
@@ -94,9 +94,13 @@ export default function JoinQueue() {
               {...register("service_type")}
               className="w-full bg-[#F8FAFC] border-none rounded-xl px-4 py-3 text-[#0F172A] font-medium focus:ring-2 focus:ring-[#10B981] transition-all"
             >
-              <option value="General">General Inquiry</option>
-              <option value="Billing">Billing</option>
-              <option value="Support">Support</option>
+              {counter.service_types && counter.service_types.length > 0 ? (
+                counter.service_types.map((service: any) => (
+                  <option key={service.id} value={service.id}>{service.name}</option>
+                ))
+              ) : (
+                <option value="1">General Inquiry</option>
+              )}
             </select>
           </div>
           

@@ -99,7 +99,7 @@ export default function Counters() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {counters.map((counter: any) => {
             // Using /q/ as specified in your Master Routing Spec
-            const queueUrl = `${window.location.origin}/q/${counter.qr_slug}`;
+            const queueUrl = `${window.location.origin}/mobile/joinQueue/${counter.qr_slug}`;
             return (
               <div key={counter.id} className="bg-[#111113] border border-white/5 rounded-lg p-6 flex flex-col justify-between hover:border-[#27272A] transition-colors group">
                 <div className="flex justify-between items-start mb-6">

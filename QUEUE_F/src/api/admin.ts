@@ -21,6 +21,16 @@ export async function fetchServices(): Promise<ServiceTypeOut[]> {
   return data;
 }
 
+export async function createService(payload: { name: string; estimated_duration_minutes: number; priority_weight: number }) {
+  const { data } = await apiClient.post("/services/", payload);
+  return data;
+}
+
+export async function createOperator(payload: { name: string; email: string; password?: string; counter_id?: number }) {
+  const { data } = await apiClient.post("/admin/operators/create", payload);
+  return data;
+}
+
 export async function fetchRushHours() {
   const { data } = await apiClient.get("/analytics/forecast/rush-hours");
   return data;
@@ -38,5 +48,35 @@ export async function approveAdminMigration(migrationId: number) {
 
 export async function rejectAdminMigration(migrationId: number) {
   const { data } = await apiClient.post(`/migrations/${migrationId}/reject`);
+  return data;
+}
+
+export async function resetOperatorPassword(operatorId: number, payload: { new_password: string }) {
+  const { data } = await apiClient.post(`/admin/operators/reset-password/${operatorId}`, payload);
+  return data;
+}
+
+export async function disableOperator(operatorId: number) {
+  const { data } = await apiClient.post(`/admin/operators/disable/${operatorId}`);
+  return data;
+}
+
+export async function enableOperator(operatorId: number) {
+  const { data } = await apiClient.post(`/admin/operators/enable/${operatorId}`);
+  return data;
+}
+
+export async function deleteOperator(operatorId: number) {
+  const { data } = await apiClient.delete(`/admin/operators/${operatorId}`);
+  return data;
+}
+
+export async function fetchCounterStatus(counterId: number): Promise<AdminCounterStatusResponse> {
+  const { data } = await apiClient.get(`/admin/counters/${counterId}/status`);
+  return data;
+}
+
+export async function forceTakeoverCounter(counterId: number) {
+  const { data } = await apiClient.post(`/admin/counters/${counterId}/force-takeover`);
   return data;
 }

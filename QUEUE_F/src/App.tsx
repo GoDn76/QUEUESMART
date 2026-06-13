@@ -14,10 +14,12 @@ import Displays from "./pages/admin/Displays";
 import Analytics from "./pages/admin/Analytics";
 import Settings from "./pages/admin/Settings";
 import Migrations from "./pages/admin/Migrations";
+import Notifications from "./pages/admin/Notifications";
 import Terminal from "./pages/operator/Terminal";
 import SelectService from "./pages/kiosk/SelectService";
 import Details from "./pages/kiosk/Details";
 import Success from "./pages/kiosk/Success";
+import KioskSetup from "./pages/kiosk/Setup";
 import DisplayBoard from "./pages/display/DisplayBoard";
 import Hub from "./pages/Hub";
 import Login from "./pages/auth/Login";
@@ -49,6 +51,7 @@ function App() {
           <Route path="display-setup" element={<Displays />} />
           <Route path="analytics" element={<Analytics />} />
           <Route path="migrations" element={<Migrations />} />
+          <Route path="notifications" element={<Notifications />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 
@@ -59,6 +62,7 @@ function App() {
         </Route>
 
         {/* Kiosk Routes */}
+        <Route path="/kiosk-setup" element={<KioskSetup />} />
         <Route path="/kiosk/:qr_slug" element={<KioskLayout />}>
           <Route index element={<Navigate to="select-service" replace />} />
           <Route path="select-service" element={<SelectService />} />

@@ -4,30 +4,51 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import { fetchOperators } from "@/api/admin";
-
-const fallbackOperators = [
-  { id: 1, name: 'Sarah J.', email: 'sarah@test.com', active: true, session_version: 1, failed_login_attempts: 0 },
-  { id: 2, name: 'Mike T.', email: 'mike@test.com', active: true, session_version: 1, failed_login_attempts: 0 },
-  { id: 3, name: 'Emma W.', email: 'emma@test.com', active: false, session_version: 1, failed_login_attempts: 0 },
-];
+import { Plus, Loader2, Trash2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchOperators, createOperator, deleteOperator } from "@/api/admin";
+import { fetchCounters } from "@/api/counters";
+import { useForm } from "react-hook-form";
 
 export default function Operators() {
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const queryClient = useQueryClient();
+  
+  const { data: counters } = useQuery({
+    queryKey: ['countersList'],
+    queryFn: fetchCounters,
+  });
+  
   const { data, isLoading } = useQuery({
     queryKey: ['adminOperators'],
     queryFn: fetchOperators,
     retry: false,
   });
 
-  const operators = data || fallbackOperators;
+  const createMutation = useMutation({
+    mutationFn: createOperator,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminOperators'] });
+      setIsAddOpen(false);
+      reset();
+    }
+  });
 
-  const handleAddOperator = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsAddOpen(false);
-    // Trigger mutation or toaster in real app
+  const deleteMutation = useMutation({
+    mutationFn: deleteOperator,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminOperators'] });
+    }
+  });
+
+  const { register, handleSubmit, reset } = useForm<{ name: string; email: string; password: string; counter_id: string }>();
+  const operators = data || [];
+
+  const onSubmit = (formData: any) => {
+    createMutation.mutate({
+      ...formData,
+      counter_id: formData.counter_id ? Number(formData.counter_id) : undefined
+    });
   };
 
   return (
@@ -41,8 +62,8 @@ export default function Operators() {
           <DialogTrigger asChild>
             <Button><Plus className="w-4 h-4 mr-2" /> Add Operator</Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[425px]">
-            <form onSubmit={handleAddOperator}>
+          <DialogContent className="bg-[#111113] border border-white/5 text-white sm:max-w-[425px]">
+            <form onSubmit={handleSubmit(onSubmit)}>
               <DialogHeader>
                 <DialogTitle>Add New Operator</DialogTitle>
                 <DialogDescription>
@@ -51,16 +72,35 @@ export default function Operators() {
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Full Name</label>
-                  <Input placeholder="John Doe" required />
+                  <label className="text-sm font-medium text-[#A1A1AA]">Full Name</label>
+                  <input {...register("name", { required: true })} className="w-full bg-[#1A1A1A] border border-[#27272A] rounded-md px-3 py-2 text-white focus:outline-none focus:border-[#4ADE80]" placeholder="John Doe" required />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Email Address</label>
-                  <Input type="email" placeholder="john.doe@hospital.com" required />
+                  <label className="text-sm font-medium text-[#A1A1AA]">Email Address</label>
+                  <input {...register("email", { required: true })} type="email" className="w-full bg-[#1A1A1A] border border-[#27272A] rounded-md px-3 py-2 text-white focus:outline-none focus:border-[#4ADE80]" placeholder="john.doe@hospital.com" required />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#A1A1AA]">Password</label>
+                  <input {...register("password", { required: true, minLength: 6 })} type="password" className="w-full bg-[#1A1A1A] border border-[#27272A] rounded-md px-3 py-2 text-white focus:outline-none focus:border-[#4ADE80]" placeholder="Minimum 6 characters" required />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-[#A1A1AA]">Assign Counter (Required)</label>
+                  <select 
+                    {...register("counter_id", { required: true })}
+                    className="w-full h-10 px-3 py-2 bg-[#1A1A1A] border border-[#27272A] rounded-md text-white focus:outline-none focus:border-[#4ADE80]"
+                  >
+                    <option value="">Select a counter...</option>
+                    {counters?.map((c: any) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit">Send Invitation</Button>
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Send Invitation
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -94,8 +134,21 @@ export default function Operators() {
                     {op.active ? 'Active' : 'Disabled'}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right space-x-2">
                   <Button variant="ghost" size="sm">View</Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                    onClick={() => {
+                      if(window.confirm(`Are you sure you want to delete operator ${op.name}?`)) {
+                        deleteMutation.mutate(op.id);
+                      }
+                    }}
+                    disabled={deleteMutation.isPending}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

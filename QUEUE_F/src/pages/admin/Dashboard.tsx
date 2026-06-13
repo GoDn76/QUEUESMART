@@ -2,28 +2,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsToolti
 import { useQuery } from "@tanstack/react-query";
 import { fetchAnalyticsSummary } from "@/api/admin";
 
-// Placeholder data if API fails
-const fallbackData = {
-  active_tokens: 124,
-  completed_today: 892,
-  waiting_count: 45,
-  drop_off_rate: 2.4
-};
-
-const visitorData = [
-  { time: '08:00', visitors: 20 },
-  { time: '10:00', visitors: 85 },
-  { time: '12:00', visitors: 150 },
-  { time: '14:00', visitors: 110 },
-  { time: '16:00', visitors: 90 },
-  { time: '18:00', visitors: 30 },
-];
-
-const serviceData = [
-  { name: 'Registration', count: 400 },
-  { name: 'Billing', count: 300 },
-  { name: 'Pharmacy', count: 192 },
-];
+import { fetchRushHours } from "@/api/admin";
 
 export default function Dashboard() {
   const { data, isLoading } = useQuery({
@@ -32,7 +11,33 @@ export default function Dashboard() {
     retry: false,
   });
 
-  const stats = data || fallbackData;
+  const { data: rushHoursData } = useQuery({
+    queryKey: ['adminRushHours'],
+    queryFn: fetchRushHours,
+    retry: false,
+  });
+
+  const stats = data || {
+    active_tokens: 0,
+    completed_today: 0,
+    waiting_count: 0,
+    drop_off_rate: 0
+  };
+
+  const serviceData = data?.by_service_type 
+    ? Object.entries(data.by_service_type).map(([name, metrics]) => ({
+        name,
+        count: (metrics as any).total_tokens || 0
+      }))
+    : [];
+
+  const visitorData = rushHoursData?.peak_hours 
+    ? rushHoursData.peak_hours.map((ph: any) => ({
+        time: `${ph.time_block}:00`,
+        visitors: Math.round(ph.predicted_volume)
+      }))
+    : [];
+
 
   return (
     <div className="space-y-8">

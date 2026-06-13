@@ -7,13 +7,14 @@ import {
   fetchOperatorMigrations, approveMigration, rejectMigration
 } from "@/api/operator";
 import { useAuthStore } from "@/store/authStore";
-import { Loader2, LogOut, ArrowUp, UserPlus, MonitorPlay, Check, X } from "lucide-react";
+import { Loader2, LogOut, ArrowUp, UserPlus, Check, X } from "lucide-react";
+import { useQueueSocket } from "@/hooks/useQueueSocket";
 
 export default function Terminal() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const logout = useAuthStore(state => state.logout);
-  const [wsConnected, setWsConnected] = useState(false);
+  const operatorCounterId = useAuthStore(state => state.counterId);
   const [showWalkIn, setShowWalkIn] = useState(false);
   const [showMigrations, setShowMigrations] = useState(false);
   
@@ -35,8 +36,8 @@ export default function Terminal() {
   const waitingList = Array.isArray(queueArray) ? queueArray : [];
   const currentToken = servingData?.token_number;
   const currentTokenId = servingData?.id;
-  // If we have an active ticket, grab counter_id from it, otherwise from first waiting. Fallback 1.
-  const counterId = servingData?.counter_id || waitingList[0]?.counter_id || 1; 
+  // If we have an active ticket, grab counter_id from it, otherwise use operatorCounterId
+  const counterId = servingData?.counter_id || operatorCounterId; 
 
   // 2. CRITICAL BACKGROUND TASK: 60s Heartbeat for Redis Lock
   useEffect(() => {
@@ -58,21 +59,7 @@ export default function Terminal() {
   }, [logout, navigate]);
 
   // 3. WebSocket Connection
-  useEffect(() => {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/counter/${counterId}`;
-    
-    const ws = new WebSocket(wsUrl);
-    ws.onopen = () => setWsConnected(true);
-    ws.onclose = () => setWsConnected(false);
-    
-    ws.onmessage = () => {
-      queryClient.invalidateQueries({ queryKey: ['operatorQueue'] });
-      queryClient.invalidateQueries({ queryKey: ['operatorServing'] });
-    };
-
-    return () => ws.close();
-  }, [counterId, queryClient]);
+  const { isConnected, status } = useQueueSocket("counter", counterId?.toString());
 
   // 4. Mutations
   const callNextMutation = useMutation({
@@ -141,6 +128,18 @@ export default function Terminal() {
   };
 
   const isMutating = callNextMutation.isPending || completeMutation.isPending || skipMutation.isPending;
+
+  if (!counterId) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-[#09090B] text-white space-y-6">
+        <h1 className="text-3xl font-bold">Session Invalid</h1>
+        <p className="text-[#A1A1AA]">We couldn't detect your assigned counter. Please log out and log in again.</p>
+        <button onClick={handleLogout} className="px-6 py-3 bg-[#4ADE80] text-black font-bold uppercase rounded-md shadow-[0_0_15px_rgba(74,222,128,0.3)]">
+          Return to Login
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-full flex flex-col p-8 bg-[#09090B] text-white selection:bg-[#4ADE80] selection:text-black relative">
@@ -215,22 +214,19 @@ export default function Terminal() {
       <header className="flex justify-between items-center border-b border-white/5 pb-6 mb-6">
         <div>
           <h1 className="text-2xl font-medium tracking-tight text-white uppercase">Mission Control</h1>
-          <p className="text-sm text-[#A1A1AA] mt-1">Counter Operations • {wsConnected ? "Connected" : "Reconnecting WS..."}</p>
+          <p className="text-sm text-[#A1A1AA] mt-1">Counter Operations • Status: {status.toUpperCase()}</p>
         </div>
         <div className="flex items-center gap-4">
            <button onClick={() => setShowMigrations(true)} className="flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#27272A] border border-blue-500/30 text-blue-400 px-4 py-2 rounded-md text-sm font-bold uppercase transition">
              Migrations
            </button>
-           <button onClick={() => window.open(`/display/${counterId}`, '_blank')} className="flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#27272A] border border-purple-500/30 text-purple-400 px-4 py-2 rounded-md text-sm font-bold uppercase transition">
-             <MonitorPlay className="w-4 h-4" /> Launch Display
-           </button>
            <button onClick={() => setShowWalkIn(true)} className="flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#27272A] border border-[#27272A] px-4 py-2 rounded-md text-sm font-bold uppercase transition">
              <UserPlus className="w-4 h-4" /> Walk-In
            </button>
            <div className="flex items-center gap-3 bg-[#111113] border border-white/5 px-4 py-2 rounded-full">
-             <span className={`w-3 h-3 rounded-full ${wsConnected ? 'bg-[#4ADE80] shadow-[0_0_10px_rgba(74,222,128,0.5)]' : 'bg-[#FACC15]'}`} />
-             <span className={`text-sm font-bold tracking-wider ${wsConnected ? 'text-[#4ADE80]' : 'text-[#FACC15]'}`}>
-               {wsConnected ? 'LIVE' : 'POLLING'}
+             <span className={`w-3 h-3 rounded-full ${isConnected ? 'bg-[#4ADE80] shadow-[0_0_10px_rgba(74,222,128,0.5)]' : 'bg-[#FACC15]'}`} />
+             <span className={`text-sm font-bold tracking-wider ${isConnected ? 'text-[#4ADE80]' : 'text-[#FACC15]'}`}>
+               {isConnected ? 'LIVE' : status.toUpperCase()}
              </span>
            </div>
            <button onClick={handleLogout} className="p-2 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-md border border-red-500/20 transition">
