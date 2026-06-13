@@ -3,8 +3,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from app.api.v1.deps import get_db, get_current_organization
+from app.api.v1.deps import get_db, get_current_organization, get_redis_repo
 from app.models.models import Organization, Counter, Operator
+from app.repositories.redis_repo import RedisRepository
 from app.schemas.schemas import CounterCreate, CounterOut, OperatorCreate, OperatorOut
 from app.core.security import get_password_hash
 from app.core.exceptions import QueueEngineException, NotFoundException
@@ -125,3 +126,17 @@ async def list_counter_operators(
 
     result = await db.execute(select(Operator).where(Operator.counter_id == counter_id))
     return result.scalars().all()
+
+@router.get("/recommendations")
+async def get_counter_recommendations(
+    service_type_id: int,
+    db: AsyncSession = Depends(get_db),
+    org: Organization = Depends(get_current_organization),
+    redis_repo: RedisRepository = Depends(get_redis_repo)
+):
+    from app.services.counter_recommendation_service import CounterRecommendationService
+    service = CounterRecommendationService(db, redis_repo)
+    res = await service.get_counter_recommendation(service_type_id, org.id)
+    if not res:
+        raise NotFoundException("No active counters found for recommendation.")
+    return res
