@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-text-primary: var(--text-primary);
+  --color-text-muted: var(--text-muted);
+  --color-border-subtle: var(--border-subtle);
+  
+  /* Shared Accents */
+  --color-accent-yellow: #FACC15;
+  --color-accent-neon: #4ADE80;
+}
+
+@layer base {
+  /* Theme A: Operations (Admin/Operator/Display) - Forced Dark Mode */
+  .theme-operations {
+    --bg-primary: #050505;
+    --bg-surface: #111111;
+    --bg-elevated: #1A1A1A;
+    --text-primary: #FFFFFF;
+    --text-muted: #888888;
+    --border-subtle: #27272A;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    color-scheme: dark;
+  }
+
+  /* Theme B: Claymorphism (User/Kiosk) - Forced Light Mode */
+  .theme-clay {
+    --bg-primary: #F0FDF4;
+    --bg-surface: #DCFCE7;
+    --bg-elevated: #FFFFFF;
+    --text-primary: #064E3B;
+    --text-muted: #166534;
+    --border-subtle: #bbf7d0;
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    color-scheme: light;
+  }
+}
+
+@layer base {
+  * {
+    border-color: var(--border-subtle);
+  }
+  body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer utilities {
+  .clay-shadow {
+    box-shadow: 8px 8px 16px #bbf7d0, -8px -8px 16px #ffffff;
+  }
+  .clay-shadow-inner {
+    box-shadow: inset -4px -4px 8px rgba(0,0,0,0.05), inset 4px 4px 8px rgba(255,255,255,0.8), 6px 6px 12px rgba(0,0,0,0.05);
+  }
+}
