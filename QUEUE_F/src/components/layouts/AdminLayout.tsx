@@ -1,5 +1,5 @@
 import { Outlet, Link, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Users, Monitor, Settings, MonitorSpeaker, LineChart, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, Monitor, Settings, MonitorSpeaker, LineChart, LogOut, ArrowRightLeft } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 
 export default function AdminLayout() {
@@ -35,6 +35,9 @@ export default function AdminLayout() {
           </Link>
           <Link to="/admin/analytics" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[#111113] text-sm font-medium text-[#A1A1AA] hover:text-white transition-colors">
             <LineChart className="w-4 h-4" /> Analytics
+          </Link>
+          <Link to="/admin/migrations" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[#111113] text-sm font-medium text-[#A1A1AA] hover:text-white transition-colors">
+            <ArrowRightLeft className="w-4 h-4" /> Migrations
           </Link>
           <Link to="/admin/settings" className="flex items-center gap-3 px-3 py-2 rounded-md hover:bg-[#111113] text-sm font-medium text-[#A1A1AA] hover:text-white transition-colors">
             <Settings className="w-4 h-4" /> Settings
