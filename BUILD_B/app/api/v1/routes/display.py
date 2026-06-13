@@ -92,6 +92,31 @@ async def delete_display_board(
     await db.delete(board)
     await db.commit()
 
+@router.get("/", response_model=List[DisplayBoardDetailsResponse])
+async def list_display_boards(
+    db: AsyncSession = Depends(get_db),
+    org_id: int = Depends(get_current_staff_org_id),
+    redis_repo: RedisRepository = Depends(get_redis_repo)
+):
+    """List all display boards in the organization."""
+    res = await db.execute(select(DisplayBoard).where(DisplayBoard.organization_id == org_id))
+    boards = res.scalars().all()
+    
+    results = []
+    for board in boards:
+        # Simplified response just for listing
+        results.append(DisplayBoardDetailsResponse(
+            display_id=board.uuid_id,
+            name=board.name,
+            board_type=board.board_type,
+            organization_id=board.organization_id,
+            organization_name="",  # Not strictly needed for list view
+            counter_id=board.counter_id,
+            overall_waiting_count=0,
+            overall_completed_today=0
+        ))
+    return results
+
 
 async def _get_counter_state(
     counter: Counter, db: AsyncSession, redis_repo: RedisRepository

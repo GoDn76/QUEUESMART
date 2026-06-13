@@ -181,3 +181,20 @@ async def force_counter_takeover(
     await db.commit()
     
     return {"status": "ok", "message": f"Lock released for counter {counter_id}"}
+
+from pydantic import BaseModel
+class TestNotificationRequest(BaseModel):
+    phone: str
+
+@router.post("/test-notification")
+async def test_notification(
+    request: TestNotificationRequest,
+    org: Organization = Depends(get_current_organization),
+    db: AsyncSession = Depends(get_db),
+    redis_repo: RedisRepository = Depends(get_redis_repo)
+):
+    from app.services.notification_service import NotificationService
+    service = NotificationService(db, redis_repo)
+    message = "QueueMind Test Notification: If you see this, your provider is working!"
+    success = await service.send(request.phone, message)
+    return {"success": success}

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
+import httpx
 
 from app.api.v1.deps import get_db, get_redis
 
@@ -43,18 +44,35 @@ async def health_check(
         if overall_status == "healthy":
             overall_status = "degraded"
 
-    # 3. Check Twilio configuration (no network request, just config check)
+    # 3. Check Notification Provider
     from app.core.config import settings
-    if settings.TWILIO_ACCOUNT_SID and settings.TWILIO_AUTH_TOKEN and settings.TWILIO_FROM_NUMBER:
-        twilio_status = "CONFIGURED"
-    else:
-        twilio_status = "NOT_CONFIGURED"
+    notification_provider = settings.NOTIFICATION_PROVIDER
+    provider_status = "UP"
+
+    if notification_provider == "whatsapp_web":
+        try:
+            async with httpx.AsyncClient(timeout=2.0) as client:
+                res = await client.get(f"{settings.WHATSAPP_WEB_URL}/health")
+                if res.status_code == 200 and res.json().get("status") == "UP":
+                    provider_status = "UP"
+                else:
+                    provider_status = "DOWN"
+        except Exception:
+            provider_status = "DOWN"
+    elif notification_provider == "noop":
+        provider_status = "UP"
+    # For twilio/meta, you could do a basic config check or API ping, 
+    # but for now we'll just check if it's set.
+    elif notification_provider == "twilio":
+        if settings.TWILIO_ACCOUNT_SID: provider_status = "UP"
+        else: provider_status = "DOWN"
 
     response_payload = {
         "status": overall_status,
         "postgres": postgres_status,
         "redis": redis_status,
-        "twilio": twilio_status,
+        "notification_provider": notification_provider,
+        "provider_status": provider_status,
         "version": "1.0.0",
         "timestamp": datetime.now(timezone.utc).isoformat()
     }

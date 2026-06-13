@@ -30,4 +30,8 @@ async def login_operator(
 ):
     """Log in as a counter operator."""
     result = await AuthService.authenticate_operator(db=db, credentials=credentials, redis_repo=redis_repo)
-    return SessionLoginResponse(access_token=result["access_token"], session_id=result["session_id"])
+    return SessionLoginResponse(
+        access_token=result["access_token"], 
+        session_id=result["session_id"],
+        counter_id=result.get("counter_id")
+    )
