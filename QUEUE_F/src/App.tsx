@@ -13,6 +13,7 @@ import Services from "./pages/admin/Services";
 import Displays from "./pages/admin/Displays";
 import Analytics from "./pages/admin/Analytics";
 import Settings from "./pages/admin/Settings";
+import Migrations from "./pages/admin/Migrations";
 import Terminal from "./pages/operator/Terminal";
 import SelectService from "./pages/kiosk/SelectService";
 import Details from "./pages/kiosk/Details";
@@ -47,6 +48,7 @@ function App() {
           <Route path="displays" element={<Displays />} />
           <Route path="display-setup" element={<Displays />} />
           <Route path="analytics" element={<Analytics />} />
+          <Route path="migrations" element={<Migrations />} />
           <Route path="settings" element={<Settings />} />
         </Route>
 

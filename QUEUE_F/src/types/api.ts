@@ -74,19 +74,17 @@ export interface TokenOut {
 
 // Analytics
 export interface AnalyticsSummaryOut {
-  active_tokens: number;
-  completed_today: number;
-  waiting_count: number;
-  drop_off_rate: number;
-  overall: {
-    average_wait_minutes: number;
-    average_service_minutes: number;
-    total_tokens: number;
-    dropped_tokens: number;
-    drop_off_rate: number;
-  };
-  by_counter: Record<string, any>;
-  by_service_type: Record<string, any>;
+  active_tokens?: number;
+  completed_today?: number;
+  waiting_count?: number;
+  drop_off_rate?: number;
+  total_customers_today?: number;
+  average_wait_time_minutes?: number;
+  drop_off_rate_percent?: number;
+  overall?: any;
+  by_counter?: Record<string, any>;
+  by_service_type?: Record<string, any>;
+  wait_times_by_service?: any;
 }
 
 // Public Queue

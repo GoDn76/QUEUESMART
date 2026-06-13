@@ -20,3 +20,23 @@ export async function fetchServices(): Promise<ServiceTypeOut[]> {
   const { data } = await apiClient.get("/services/");
   return data;
 }
+
+export async function fetchRushHours() {
+  const { data } = await apiClient.get("/analytics/forecast/rush-hours");
+  return data;
+}
+
+export async function fetchPendingMigrations() {
+  const { data } = await apiClient.get("/migrations/pending");
+  return data;
+}
+
+export async function approveAdminMigration(migrationId: number) {
+  const { data } = await apiClient.post(`/migrations/${migrationId}/approve`);
+  return data;
+}
+
+export async function rejectAdminMigration(migrationId: number) {
+  const { data } = await apiClient.post(`/migrations/${migrationId}/reject`);
+  return data;
+}

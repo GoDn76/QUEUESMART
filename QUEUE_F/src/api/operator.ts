@@ -44,3 +44,18 @@ export const logoutOperator = async () => {
   const { data } = await apiClient.post('/operator/logout');
   return data;
 };
+
+export const fetchOperatorMigrations = async () => {
+  const { data } = await apiClient.get('/operator/migrations');
+  return data;
+};
+
+export const approveMigration = async (migrationId: number) => {
+  const { data } = await apiClient.post(`/operator/migrations/${migrationId}/approve`);
+  return data;
+};
+
+export const rejectMigration = async (migrationId: number) => {
+  const { data } = await apiClient.post(`/operator/migrations/${migrationId}/reject`);
+  return data;
+};
